@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Encuentre Todos los Mates Posibles</title>
+<style>
+body{
+  font-family:Arial, sans-serif;
+  background:#f2f2f2;
+}
+.container{
+  max-width:800px;
+  margin:40px auto;
+  background:white;
+  padding:25px;
+  border-radius:12px;
+  box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+h1{text-align:center;}
+#subtitle{
+  text-align:center;
+  font-size: 1.1em;
+  color: #555;
+  margin-bottom: 20px;
+}
+#timer{
+  text-align:center;
+  font-size:22px;
+  margin-bottom:15px;
+}
+#questionText {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 15px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+}
+img{
+  width:100%;
+  max-height:350px;
+  object-fit:contain;
+}
+button{
+  padding:10px 18px;
+  margin-top:15px;
+}
+.hidden{display:none;}
+
+/* Estilos para las respuestas en línea */
+.answers-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+.answer-box {
+  flex: 1;
+  min-width: 100px;
+  text-align: center;
+}
+.answer-box label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.answer-box input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<!-- ========================================= -->
+<!-- PERSONALIZA EL TÍTULO Y SUBTÍTULO AQUÍ    -->
+<!-- ========================================= -->
+<h1>Encuentre Todos los Mates Posibles</h1>
+<div id="subtitle">Instrucciones: Lee la pregunta, ten en cuenta quién mueve y encuentra todos los movimientos que llevan al mate. Los movimientos se deben colocar en notación algebraica en español</div>
+<!-- ========================================= -->
+
+<div id="timer">20:00</div>
+
+<!-- INICIO -->
+<div id="startScreen">
+<p>Nombre del estudiante:</p>
+<input type="text" id="studentName">
+<button onclick="startQuiz()">Comenzar</button>
+</div>
+
+<!-- TEST -->
+<div id="quizScreen" class="hidden">
+<h3 id="questionNumber"></h3>
+<img id="questionImage">
+<div id="questionText"></div> <!-- Aquí aparecerá la pregunta personalizada -->
+
+<!-- Las respuestas se generarán dinámicamente aquí -->
+<div id="answersContainer" class="answers-row"></div>
+
+<button onclick="nextQuestion()">Siguiente</button>
+</div>
+
+<!-- RESULTADOS -->
+<div id="resultScreen" class="hidden">
+<h2>Resultados</h2>
+<p id="finalName"></p>
+<p id="finalScore"></p>
+
+<p style="font-weight:bold">Seleccione todo el texto del resultado, copie y envíe al correo quizacademiamillennials@gmail.com</p>
+
+<div id="review"></div>
+</div>
+
+</div>
+
+<script>
+
+/****************************************************/
+/* EDITAR AQUI: CONFIGURACIÓN DE LAS PREGUNTAS     */
+/****************************************************/
+
+// ACTIVAR/DESACTIVAR CRONÓMETRO: Cambia a false para deshabilitar el temporizador
+const TIMER_ENABLED = false;
+
+// Tiempo del examen en segundos (1200 = 20 minutos) - Solo aplica si TIMER_ENABLED = true
+const QUIZ_TIME = 1200;
+
+// =================================================================
+// PERSONALIZA LOS TEXTOS DE EJEMPLO DENTRO DE LAS CASILLAS (placeholder)
+// Puedes cambiarlos por cualquier texto que ayude al estudiante
+// =================================================================
+const PLACEHOLDER_TEXTS = {
+  R1: "Ej: Dg1",
+  R2: "Ej: Th8", 
+  R3: "Ej: f7D",
+  R4: "Ej: exd5",
+  R5: "Ej: b3"
+};
+// =================================================================
+
+// =================================================================
+// LISTA DE PREGUNTAS - Cada posición tiene su propia pregunta personalizada
+// y hasta 5 respuestas (las no usadas deben quedar como "")
+// =================================================================
+const questions = [
+{
+  image: "img/p1.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Db6", "Dc5", "Dd2", "", ""]  // 3 respuestas
+},
+{
+  image: "img/p2.png",
+  question: "Juegan las blancas. Encuentre los 2 movimientos que dan mate al rey negro",
+  answers: ["De4", "Df7", "", "", ""] // 2 respuestas
+},
+{
+  image: "img/p3.png",
+  question: "Juegan las blancas. Encuentre los 4 movimientos que dan mate al rey negro",
+  answers: ["Dg7", "Dg6", "Df7", "Dh8", ""] // 4 respuestas
+},
+{
+  image: "img/p4.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Dxh5", "Txh5", "Axg5", "", ""] // 3 respuestas
+},
+{
+  image: "img/p5.png",
+  question: "Juegan las negras. Encuentre los 3 movimientos que dan mate al rey blanco",
+  answers: ["Dg2", "Cx3", "Cxf1", "", ""]  // 3 respuestas
+},
+{
+  image: "img/p6.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Dg7", "Dh8", "Tg7", "", ""] // 3 respuestas
+},
+{
+  image: "img/p7.png",
+  question: "Juegan las blancas. Encuentre los 4 movimientos que dan mate al rey negro",
+  answers: ["Dg8", "Dh6", "f8D", "f8T", ""]  // 4 respuestas
+},
+{
+  image: "img/p8.png",
+  question: "Juegan las Negras. Encuentre los 3 movimientos que dan mate al rey blanco",
+  answers: ["Dxh4", "Cf2", "g4", "", ""] // 3 respuestas
+},
+{
+  image: "img/p9.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Dg7", "Df8", "De8", "", ""] // 3 respuestas
+},
+{
+  image: "img/p10.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["De4", "g3", "d4", "", ""] // 3 respuestas
+},
+{
+  image: "img/p11.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Dg5", "Ce2", "Tf3", "", ""]  // 3 respuestas
+},
+{
+  image: "img/p12.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Db5", "Ca4", "Cd5", "", ""] // 3 respuestas
+},
+{
+  image: "img/p13.png",
+  question: "Juegan las negras. Encuentre los 3 movimientos que dan mate al rey blanco",
+  answers: ["Dg2", "Df1", "Tf1", "", ""] // 3 respuestas
+},
+{
+  image: "img/p14.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Dc5", "Dc3", "Ce5", "", ""] // 3 respuestas
+},
+{
+  image: "img/p15.png",
+  question: "Juegan las blancas. Encuentre los 4 movimientos que dan mate al rey negro",
+  answers: ["Dd7", "De6", "Db8", "Cb6", ""]  // 4 respuestas
+},
+{
+  image: "img/p16.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Cd2", "Ad5", "f3", "", ""] // 3 respuestas
+},
+{
+  image: "img/p17.png",
+  question: "Juegan las negras. Encuentre los 4 movimientos que dan mate al rey blanco",
+  answers: ["Dh6", "Ddf4", "Dd8", "g5", ""]  // 4 respuestas
+},
+{
+  image: "img/p18.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Df4", "Cf5", "g6", "", ""] // 3 respuestas
+},
+{
+  image: "img/p19.png",
+  question: "Juegan las blancas. Encuentre los 4 movimientos que dan mate al rey negro",
+  answers: ["De8", "Cf6", "Th7", "Af5", ""] // 4 respuestas
+},
+{
+  image: "img/p20.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["Df2", "De1", "g3", "", ""] // 3 respuestas
+},
+{
+  image: "img/p21.png",
+  question: "Juegan las negras. Encuentre los 3 movimientos que dan mate al rey blanco",
+  answers: ["Dc7", "Tc8", "Af8", "", ""] // 3 respuestas
+},
+{
+  image: "img/p22.png",
+  question: "Juegan las blancas. Encuentre los 3 movimientos que dan mate al rey negro",
+  answers: ["De8", "Dc7", "Ab5", "", ""] // 3 respuestas
+}
+// Puedes añadir más preguntas siguiendo el mismo formato
+];
+// =================================================================
+
+/****************************************************/
+/* FIN DE LA ZONA EDITABLE                          */
+/****************************************************/
+
+let currentQuestion = 0;
+let answers = []; // Guarda las respuestas del alumno como arrays
+let time = QUIZ_TIME;
+let timer;
+let student = "";
+
+// Número máximo de respuestas por pregunta (siempre 5, pero pueden quedar vacías)
+const MAX_ANSWERS = 5;
+
+function normalize(t) {
+ return t ? t.toLowerCase().trim() : "";
+}
+
+function startQuiz() {
+ student = document.getElementById("studentName").value;
+ if (student === "") {
+   alert("Ingrese su nombre");
+   return;
+ }
+ document.getElementById("startScreen").classList.add("hidden");
+ document.getElementById("quizScreen").classList.remove("hidden");
+ 
+ // Iniciar cronómetro solo si está habilitado
+ if (TIMER_ENABLED) {
+   startTimer();
+ } else {
+   document.getElementById("timer").innerText = "Sin límite de tiempo";
+ }
+ 
+ loadQuestion();
+}
+
+function startTimer() {
+ timer = setInterval(() => {
+   time--;
+   let m = Math.floor(time / 60);
+   let s = time % 60;
+   document.getElementById("timer").innerText =
+     `${m}:${s.toString().padStart(2, '0')}`;
+   if (time <= 0) finishQuiz();
+ }, 1000);
+}
+
+function loadQuestion() {
+ let q = questions[currentQuestion];
+ document.getElementById("questionNumber").innerText =
+   `Problema ${currentQuestion + 1} de ${questions.length}`;
+ document.getElementById("questionImage").src = q.image;
+ document.getElementById("questionText").innerText = q.question; // Mostrar la pregunta personalizada
+
+ // Generar dinámicamente los campos de respuesta en línea
+ let container = document.getElementById("answersContainer");
+ container.innerHTML = ""; // Limpiar
+ 
+ for (let i = 0; i < MAX_ANSWERS; i++) {
+   let boxNumber = i + 1;
+   let fieldDiv = document.createElement("div");
+   fieldDiv.className = "answer-box";
+   
+   // Obtener el texto placeholder personalizado para esta casilla
+   let placeholderText = PLACEHOLDER_TEXTS[`R${boxNumber}`] || "Ej: g1";
+   
+   fieldDiv.innerHTML = `
+     <label for="ans-${boxNumber}">R${boxNumber}</label>
+     <input type="text" id="ans-${boxNumber}" placeholder="${placeholderText}">
+   `;
+   container.appendChild(fieldDiv);
+ }
+
+ // Limpiar los campos de entrada
+ for (let i = 1; i <= MAX_ANSWERS; i++) {
+   document.getElementById(`ans-${i}`).value = "";
+ }
+}
+
+function nextQuestion() {
+ // Recoger respuestas del alumno
+ let studentAnswersForCurrent = [];
+ for (let i = 1; i <= MAX_ANSWERS; i++) {
+   let ans = document.getElementById(`ans-${i}`).value;
+   studentAnswersForCurrent.push(ans);
+ }
+
+ // Guardamos las respuestas (vacías incluidas)
+ answers[currentQuestion] = studentAnswersForCurrent;
+ currentQuestion++;
+
+ if (currentQuestion >= questions.length) {
+   finishQuiz();
+ } else {
+   loadQuestion();
+ }
+}
+
+function finishQuiz() {
+ if (TIMER_ENABLED) {
+   clearInterval(timer);
+ }
+
+ let score = 0;
+ let totalPossible = 0;
+
+ // Primero calculamos el total de respuestas posibles
+ questions.forEach((q) => {
+   q.answers.forEach((ans) => {
+     if (ans && ans.trim() !== "") {
+       totalPossible++;
+     }
+   });
+ });
+
+ // Para cada pregunta, comparamos las respuestas del alumno con las correctas (sin importar el orden)
+ for (let i = 0; i < questions.length; i++) {
+   let q = questions[i];
+   let studentAnswers = answers[i] || [];
+   
+   // Filtramos solo las respuestas correctas definidas (no vacías)
+   let correctAnswers = q.answers.filter(a => a && a.trim() !== "");
+   
+   // Filtramos las respuestas del alumno que no están vacías
+   let studentNonEmpty = studentAnswers.filter(a => a && a.trim() !== "");
+   
+   // Normalizamos todas las respuestas para comparación
+   let normalizedCorrect = correctAnswers.map(a => normalize(a));
+   let normalizedStudent = studentNonEmpty.map(a => normalize(a));
+   
+   // Por cada respuesta correcta, verificamos si está en las respuestas del alumno
+   // Llevamos un contador de aciertos para esta pregunta
+   let correctCount = 0;
+   let usedIndexes = []; // Para no contar la misma respuesta del alumno múltiples veces
+   
+   normalizedCorrect.forEach(correct => {
+     // Buscamos si esta respuesta correcta está en las respuestas del alumno (no usada aún)
+     for (let j = 0; j < normalizedStudent.length; j++) {
+       if (!usedIndexes.includes(j) && normalizedStudent[j] === correct) {
+         correctCount++;
+         usedIndexes.push(j);
+         break;
+       }
+     }
+   });
+   
+   score += correctCount;
+ }
+
+ document.getElementById("quizScreen").classList.add("hidden");
+ document.getElementById("resultScreen").classList.remove("hidden");
+
+ document.getElementById("finalName").innerText = "Nombre: " + student;
+ document.getElementById("finalScore").innerText =
+   `Puntaje: ${score} / ${totalPossible}`;
+
+ // Generar reporte detallado mostrando qué respuestas fueron correctas
+ let review = document.getElementById("review");
+ review.innerHTML = "";
+
+ let email = `Nombre: ${student}\nPuntaje: ${score}/${totalPossible}\n\n`;
+
+ for (let i = 0; i < questions.length; i++) {
+   let q = questions[i];
+   let studentAnswers = answers[i] || [];
+   
+   let correctAnswers = q.answers.filter(a => a && a.trim() !== "");
+   let normalizedCorrect = correctAnswers.map(a => normalize(a));
+   
+   review.innerHTML += `<p><b>Problema ${i + 1}</b><br>`;
+   review.innerHTML += `<i>Pregunta: ${q.question}</i><br>`;
+   
+   email += `Problema ${i + 1}\n`;
+   email += `Pregunta: ${q.question}\n`;
+
+   // Creamos una copia de las respuestas correctas para ir tachando las que ya se encontraron
+   let correctAnswersCopy = [...normalizedCorrect];
+   
+   // Primero, identificamos qué respuestas del alumno son correctas
+   for (let j = 0; j < MAX_ANSWERS; j++) {
+     let boxNumber = j + 1;
+     let studentAnswer = studentAnswers[j] || "";
+     let normalizedStudent = normalize(studentAnswer);
+     
+     // Verificamos si esta respuesta del alumno está en las respuestas correctas
+     let indexInCorrect = correctAnswersCopy.indexOf(normalizedStudent);
+     let isCorrect = false;
+     
+     if (indexInCorrect !== -1 && studentAnswer.trim() !== "") {
+       isCorrect = true;
+       // Eliminamos esta respuesta correcta para no volver a contarla
+       correctAnswersCopy.splice(indexInCorrect, 1);
+     }
+     
+     // Mostramos en el reporte
+     if (studentAnswer.trim() !== "") {
+       if (isCorrect) {
+         review.innerHTML += `R${boxNumber}: ✅ Correcta (Respuesta: ${studentAnswer})<br>`;
+       } else {
+         review.innerHTML += `R${boxNumber}: ❌ Incorrecta (Respuesta: ${studentAnswer})<br>`;
+       }
+     } else {
+       // Si está vacío, mostramos como tal
+       if (j < correctAnswers.length) {
+         // Si debería haber una respuesta aquí pero el alumno no puso nada
+         review.innerHTML += `R${boxNumber}: ⚠️ Vacío (se esperaba: ${correctAnswers[j]})<br>`;
+       } else {
+         // Si no se esperaba respuesta aquí
+         review.innerHTML += `R${boxNumber}: - (vacío)<br>`;
+       }
+     }
+     
+     email += `R${boxNumber} alumno: ${studentAnswer || "(vacío)"} | correcta: ${correctAnswers[j] || "(ninguna)"}\n`;
+   }
+   
+   review.innerHTML += `</p>`;
+   email += `\n`;
+ }
+
+ let subject = "Resultados Quiz Flexible";
+ window.location.href =
+   "mailto:quizacademiamillennials@gmail.com" +
+   `?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(email)}`;
+}
+
+</script>
+
+</body>
+</html>
